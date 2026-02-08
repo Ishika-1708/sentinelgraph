@@ -22,3 +22,51 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets, keys and credentials
+*.pem
+*.key
+*.crt
+*.p12
+secrets.json
+credentials
+.aws/
+.aws/credentials
+.env
+.env.*
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+pip-wheel-metadata/
+*.egg-info/
+coverage/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+celerybeat-schedule
+
+# Databases
+*.sqlite3
+*.db
+*.sqlite
+
+# Terraform
+.terraform/
+terraform.tfstate*
+*.tfstate*
+
+# Project-specific sensitive or large files
+response.json
+response_utf8.json
+metadata.json
+backend/
+sentinel-redis-snapshot.tar
+start-all.bat
+start-backend.bat
+start-frontend.bat

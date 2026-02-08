@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RepoDetails, WorkspaceTab } from '../types';
 import Sidebar from './Sidebar';
@@ -7,11 +7,11 @@ import TopNav from './TopNav';
 import GraphView from './GraphView';
 import ThoughtStream from './ThoughtStream';
 import { analyzeArchitecture } from '../services/geminiService';
-import { 
-  Activity, 
-  Box, 
-  ShieldCheck, 
-  AlertTriangle, 
+import {
+  Activity,
+  Box,
+  ShieldCheck,
+  AlertTriangle,
   Zap
 } from 'lucide-react';
 
@@ -55,12 +55,42 @@ const Workspace: React.FC<WorkspaceProps> = ({ repoDetails }) => {
   }, [repoDetails.url, repoDetails.intent]);
 
   // Content rendering switcher based on the active tab
+  const graphData = useMemo(() => {
+    if (!data || !Array.isArray(data.nodes)) return { nodes: [], links: [] };
+
+    const rawNodeIds = new Set(data.nodes.map((n: any) => n.id));
+    const links = data.nodes.flatMap((n: any) =>
+      (n.imports || [])
+        .filter((target: string) => rawNodeIds.has(target))
+        .map((target: string) => ({ source: n.id, target }))
+    );
+
+    const connectedNodeIds = new Set();
+    links.forEach((l: any) => {
+      connectedNodeIds.add(l.source);
+      connectedNodeIds.add(l.target);
+    });
+
+    const nodes = data.nodes
+      .filter((n: any) => connectedNodeIds.has(n.id))
+      .map((n: any) => ({
+        id: n.id,
+        label: n.label,
+        path: n.path ?? n.label ?? n.id,
+        health: n.health,
+        type: n.type,
+        val: n.val ?? n.complexity ?? 1,
+      }));
+
+    return { nodes, links };
+  }, [data]);
+
   const renderContent = () => {
     if (loading) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white">
           <div className="w-24 h-[1px] bg-gray-100 mb-8 relative overflow-hidden">
-            <motion.div 
+            <motion.div
               className="absolute inset-0 bg-[#1ABC9C]"
               animate={{ x: ['-100%', '100%'] }}
               transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
@@ -73,29 +103,33 @@ const Workspace: React.FC<WorkspaceProps> = ({ repoDetails }) => {
 
     switch (activeTab) {
       case 'graph':
-        return <GraphView data={data} onNodeClick={setSelectedNode} />;
+        return (
+          <div className="flex-1 min-h-[70vh]">
+            <GraphView data={graphData} onNodeClick={setSelectedNode} />
+          </div>
+        );
       case 'thoughts':
         return <ThoughtStream thoughts={data?.thoughts || []} />;
       case 'overview':
         return (
           <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard label="Total Components" value={data?.nodes?.length || 0} icon={<Box className="w-4 h-4" />} />
-            <StatCard label="Violations" value={data?.nodes?.filter((n:any) => n.health === 'violation').length || 0} icon={<AlertTriangle className="w-4 h-4 text-red-500" />} />
-            <StatCard label="Optimized" value={data?.nodes?.filter((n:any) => n.health === 'optimized').length || 0} icon={<ShieldCheck className="w-4 h-4 text-green-500" />} />
+            <StatCard label="Violations" value={data?.nodes?.filter((n: any) => n.health === 'violation').length || 0} icon={<AlertTriangle className="w-4 h-4 text-red-500" />} />
+            <StatCard label="Optimized" value={data?.nodes?.filter((n: any) => n.health === 'optimized').length || 0} icon={<ShieldCheck className="w-4 h-4 text-green-500" />} />
             <StatCard label="Health Score" value="84%" icon={<Activity className="w-4 h-4" />} />
           </div>
         );
       case 'blueprint':
         return (
           <div className="p-8 max-w-4xl">
-            <h3 className="text-xl font-bold uppercase tracking-tight mb-8">Refactor Blueprint</h3>
+            <h3 className="text-sm font-bold uppercase tracking-tight text-gray-800 mb-6">Refactor Blueprint</h3>
             <div className="space-y-6">
               {data?.blueprint?.map((step: any, idx: number) => (
                 <div key={idx} className="flex gap-6 p-6 border border-gray-100 bg-white">
-                  <div className="text-4xl font-black text-gray-100">{String(idx + 1).padStart(2, '0')}</div>
+                  <div className="text-4xl font-black text-gray-700">{String(idx + 1).padStart(2, '0')}</div>
                   <div>
-                    <h4 className="font-bold uppercase tracking-wide mb-2">{step.title}</h4>
-                    <p className="text-sm text-gray-500 leading-relaxed">{step.description}</p>
+                    <h4 className="text-sm font-bold uppercase tracking-tight text-gray-800 mb-1">{step.title}</h4>
+                    <p className="text-xs text-gray-700 leading-relaxed">{step.description}</p>
                   </div>
                 </div>
               ))}
@@ -119,11 +153,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ repoDetails }) => {
         <TopNav repoUrl={repoDetails.url} />
         <main className="flex-1 relative overflow-hidden flex flex-col">
           {renderContent()}
-          
+
           {/* Detail Overlay for selected nodes */}
           <AnimatePresence>
             {selectedNode && (
-              <motion.div 
+              <motion.div
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}

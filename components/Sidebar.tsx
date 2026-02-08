@@ -25,12 +25,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
 
   const menuItems: { id: WorkspaceTab; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <Activity className="w-5 h-5" /> },
-    { id: 'input', label: 'Repository', icon: <FileCode className="w-5 h-5" /> },
     { id: 'graph', label: 'Architecture Graph', icon: <Share2 className="w-5 h-5" /> },
     { id: 'thoughts', label: 'Thought Stream', icon: <Cpu className="w-5 h-5" /> },
     { id: 'blueprint', label: 'Refactor Blueprint', icon: <Layout className="w-5 h-5" /> },
-    { id: 'sandbox', label: 'Sandbox Runner', icon: <Terminal className="w-5 h-5" /> },
-    { id: 'pr-manager', label: 'PR Manager', icon: <GitPullRequest className="w-5 h-5" /> },
   ];
 
   const bottomItems: { id: WorkspaceTab; label: string; icon: React.ReactNode }[] = [

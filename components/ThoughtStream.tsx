@@ -36,8 +36,8 @@ const ThoughtStream: React.FC<ThoughtStreamProps> = ({ thoughts }) => {
                    <Info className="w-4 h-4 text-blue-500" />}
                 </div>
                 <div className="flex-1">
-                  <div className="text-xs font-bold uppercase tracking-tight mb-1">{t.message}</div>
-                  <p className="text-xs text-gray-500 font-light leading-relaxed">
+                  <div className="text-sm font-bold uppercase tracking-tight mb-1">{t.message}</div>
+                  <p className="text-xs text-gray-500 leading-relaxed">
                     {t.details || 'Analyzing component isolation and dependency strictness...'}
                   </p>
                 </div>

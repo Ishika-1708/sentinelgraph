@@ -1,90 +1,72 @@
 
-import React, { useMemo } from 'react';
-import ReactFlow, { 
-  Background, 
-  Controls, 
-  MiniMap, 
-  Node, 
-  Edge,
-  MarkerType 
-} from 'reactflow';
-import { HEALTH_COLORS } from '../constants';
+import React, { useMemo, useRef, useEffect } from 'react';
+import ForceGraph3D, { ForceGraphMethods, LinkObject, NodeObject } from 'react-force-graph-3d';
+import SpriteText from 'three-spritetext';
 
 interface GraphViewProps {
-  data: any;
-  onNodeClick?: (node: any) => void;
+  data: { nodes: NodeObject[]; links: LinkObject[] } | null;
+  onNodeClick?: (node: NodeObject) => void;
 }
 
+const HEALTH_COLOR: Record<string, string> = {
+  healthy: '#4ade80',
+  violation: '#f87171',
+  warning: '#fbbf24',
+  optimized: '#2dd4bf',
+};
+
 const GraphView: React.FC<GraphViewProps> = ({ data, onNodeClick }) => {
-  const { nodes: flowNodes, edges: flowEdges } = useMemo(() => {
-    if (!data || !data.nodes) return { nodes: [], edges: [] };
+  const graphRef = useRef<ForceGraphMethods>(null);
 
-    const initialNodes: Node[] = data.nodes.map((n: any, idx: number) => ({
-      id: n.id,
-      data: { label: n.label, health: n.health, type: n.type },
-      position: { x: (idx % 3) * 250, y: Math.floor(idx / 3) * 150 },
-      style: {
-        background: '#fff',
-        color: '#000',
-        borderColor: HEALTH_COLORS[n.health as keyof typeof HEALTH_COLORS] || '#000',
-        borderWidth: 2,
-        borderRadius: 0,
-        fontWeight: 'bold',
-        fontSize: '12px'
-      }
-    }));
+  const graphData = useMemo(() => data ?? { nodes: [], links: [] }, [data]);
 
-    const initialEdges: Edge[] = [];
-    data.nodes.forEach((n: any) => {
-      n.imports?.forEach((targetId: string) => {
-        initialEdges.push({
-          id: `e-${n.id}-${targetId}`,
-          source: n.id,
-          target: targetId,
-          animated: n.health === 'violation',
-          style: { stroke: n.health === 'violation' ? HEALTH_COLORS.violation : '#e5e7eb', strokeWidth: 1.5 },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: n.health === 'violation' ? HEALTH_COLORS.violation : '#e5e7eb',
-          },
-        });
-      });
-    });
+  useEffect(() => {
+    if (graphRef.current && graphData.nodes.length > 0) {
+        graphRef.current.zoomToFit(400, 40);
+    }
+  }, [graphData]);
 
-    return { nodes: initialNodes, edges: initialEdges };
-  }, [data]);
+  const nodeLabel = (node: NodeObject) => {
+    const path = (node as any).path || (node as any).label || (node as any).id || '';
+    const filename = typeof path === 'string' ? path.split('/').pop() || path : '';
+    return `${filename}\n${path}`;
+  };
+
+  const nodeColor = (node: NodeObject) => {
+    const health = (node as any).health as string | undefined;
+    return HEALTH_COLOR[health ?? ''] ?? '#ffffff';
+  };
+
+  const nodeVal = (node: NodeObject) => {
+    const val = (node as any).val ?? (node as any).complexity;
+    return typeof val === 'number' ? Math.max(val, 1) : 1;
+  };
+
+  const nodeLabelObject = (node: NodeObject) => {
+    const label = (node as any).label || (node as any).id || '';
+    const sprite = new SpriteText(label);
+    sprite.color = '#8FB5FF';
+    sprite.textHeight = 6;
+    const val = nodeVal(node);
+    sprite.position.set(0, val + 4, 0);
+    return sprite;
+  };
 
   return (
-    <div className="w-full h-full relative">
-      <ReactFlow
-        nodes={flowNodes}
-        edges={flowEdges}
-        onNodeClick={(_, node) => onNodeClick?.(node)}
-        fitView
-      >
-        <Background color="#f8fafc" gap={20} />
-        <Controls />
-        <MiniMap 
-          nodeStrokeColor={(n) => n.style?.borderColor as string} 
-          maskColor="rgba(255, 255, 255, 0.5)" 
-        />
-      </ReactFlow>
-
-      {/* Legend */}
-      <div className="absolute top-4 right-4 p-4 bg-white border border-gray-100 space-y-2 pointer-events-none text-[10px] font-bold uppercase tracking-wider shadow-sm z-10">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-[#3B82F6]" /> <span>Healthy</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-[#EF4444]" /> <span>Violation</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-[#F59E0B]" /> <span>Warning</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-[#10B981]" /> <span>Optimized</span>
-        </div>
-      </div>
+    <div className="relative w-full h-[70vh] bg-white">
+      <ForceGraph3D
+        ref={graphRef}
+        graphData={graphData}
+        nodeLabel={nodeLabel}
+        nodeColor={nodeColor}
+        nodeVal={nodeVal}
+        nodeThreeObject={nodeLabelObject}
+        nodeThreeObjectExtend={true}
+        linkDirectionalParticles={2}
+        linkDirectionalParticleWidth={2}
+        linkOpacity={0.6}
+        onNodeClick={(node) => onNodeClick?.(node)}
+      />
     </div>
   );
 };
