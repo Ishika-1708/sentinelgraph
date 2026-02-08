@@ -1,0 +1,9 @@
+
+{
+  "name": "SentinelGraph",
+  "description": "AI-powered architectural intelligence platform for software repositories.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
